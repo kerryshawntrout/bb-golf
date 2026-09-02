@@ -1,0 +1,16 @@
+{
+  "short_name": "BB Golf",
+  "name": "Brilliantly Boring Golf",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2906/2906807.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#121a14",
+  "theme_color": "#121a14",
+  "display": "standalone",
+  "orientation": "portrait"
+}

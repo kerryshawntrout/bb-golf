@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="manifest" href="manifest.json">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brilliantly Boring Golf</title>
+  <style>
+    :root {
+      --bg: #121a14;            /* Dark Pine / Deep Forest */
+      --card-bg: #1b261d;       /* Fairway Dark Green */
+      --accent-green: #2e7d32; /* Masters Green */
+      --accent-gold: #d4af37;  /* Trophy Gold */
+      --accent-light: #e8f5e9; /* Soft Fairway Cream */
+      --accent-red: #c62828;   /* Hazard Red */
+      --text: #f1f8f5;         /* Off-white */
+      --subtext: #a3c2ab;      /* Soft Sage */
+      --border: #2a3d2f;       /* Subtle Green Border */
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      padding-bottom: 40px;
+    }
+    .hero-banner {
+      width: 100%;
+      height: 140px;
+      background-image: linear-gradient(to bottom, rgba(18, 26, 20, 0.3), rgba(18, 26, 20, 0.95)), 
+                        url('https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&w=800&q=80');
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      align-items: flex-end;
+      padding: 16px;
+      box-sizing: border-box;
+      border-bottom: 2px solid var(--accent-gold);
+    }
+    .hero-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .container {
+      padding: 16px;
+    }
+    h2, h3 { margin: 8px 0; color: var(--accent-gold); }
+    .setup-card, .hole-card, .history-card, .plan-card {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    label { display: block; margin-top: 12px; font-weight: bold; font-size: 14px; color: var(--subtext); }
+    input[type="text"], input[type="date"], select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #121a14;
+      color: var(--text);
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row span { font-size: 15px; font-weight: 500; }
+    .toggle-btn {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      background-color: var(--accent-red);
+      color: #ffffff;
+      transition: all 0.2s ease;
+    }
+    .toggle-btn.active {
+      background-color: var(--accent-green);
+      box-shadow: 0 0 8px rgba(46, 125, 50, 0.6);
+    }
+    .number-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+    }
+    .number-input {
+      width: 70px;
+      padding: 8px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #121a14;
+      color: var(--accent-gold);
+    }
+    .btn-main {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--accent-gold);
+      color: #121a14;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 12px;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background-color: #2a3d2f;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-danger {
+      background-color: var(--accent-red);
+      color: #ffffff;
+    }
+    .btn-delete {
+      background-color: transparent;
+      border: 1px solid var(--accent-red);
+      color: var(--accent-red);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .hidden { display: none; }
+    .history-item {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .history-item h4 { margin: 0; color: var(--accent-gold); font-size: 16px; }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--subtext);
+      background: rgba(0,0,0,0.2);
+      padding: 8px;
+      border-radius: 6px;
+    }
+    .plan-box {
+      background: rgba(0,0,0,0.25);
+      border-left: 4px solid var(--accent-gold);
+      padding: 12px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 8px;
+    }
+    .plan-title {
+      font-weight: bold;
+      color: var(--text);
+      margin-bottom: 4px;
+      font-size: 15px;
+    }
+    .plan-desc {
+      font-size: 13px;
+      color: var(--subtext);
+      line-height: 1.4;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO HEADER WITH IMAGE -->
+  <div class="hero-banner">
+    <h1 class="hero-title">⛳ Brilliantly Boring Golf</h1>
+  </div>
+
+  <div class="container">
+    <!-- STEP 1: SETUP ROUND -->
+    <div id="setup-view" class="setup-card">
+      <h2>Start New Round</h2>
+      <label for="course-name">Course Name</label>
+      <input type="text" id="course-name" placeholder="e.g. Pebble Beach Golf Links">
+
+      <label for="round-date">Date</label>
+      <input type="date" id="round-date">
+
+      <label for="hole-count">Holes</label>
+      <select id="hole-count">
+        <option value="18">18 Holes</option>
+        <option value="9">9 Holes</option>
+      </select>
+
+      <button class="btn-main" onclick="startRound()">Start Round</button>
+    </div>
+
+    <!-- STEP 2: TRACK HOLES -->
+    <div id="tracker-view" class="hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="current-hole-title">Hole 1</h2>
+        <span id="round-info-header" style="color: var(--accent-gold); font-weight: bold; font-size: 14px;"></span>
+      </div>
+
+      <div class="hole-card">
+        <div class="toggle-row">
+          <span>1. Scoring Zone in Regulation</span>
+          <button id="btn-sz" class="toggle-btn" onclick="toggleStat('sz')">✕</button>
+        </div>
+
+        <div class="toggle-row">
+          <span>2. Up & Down in 3 (from SZ)</span>
+          <button id="btn-ud" class="toggle-btn" onclick="toggleStat('ud')">✕</button>
+        </div>
+
+        <div class="toggle-row">
+          <span>3. 1st Putt Under 4ft</span>
+          <button id="btn-putt4" class="toggle-btn" onclick="toggleStat('putt4')">✕</button>
+        </div>
+
+        <div class="number-row">
+          <span>4. Total Putts</span>
+          <input type="number" id="num-putts" class="number-input" value="2" min="0">
+        </div>
+
+        <div class="number-row">
+          <span>5. Hole Score</span>
+          <input type="number" id="num-score" class="number-input" value="4" min="1">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button id="btn-prev" class="btn-main btn-secondary" onclick="changeHole(-1)">Previous</button>
+        <button id="btn-next" class="btn-main" onclick="changeHole(1)">Next Hole</button>
+      </div>
+      
+      <button id="btn-finish" class="btn-main btn-danger hidden" onclick="saveRound()">Finish & Save Round</button>
+    </div>
+
+    <!-- DYNAMIC PRACTICE PLAN -->
+    <div id="plan-view" class="plan-card">
+      <h3 style="margin-top: 0;">Suggested Practice Plan</h3>
+      <div id="plan-content">
+        <p style="color: var(--subtext); font-size: 14px; margin: 0;">Play a round to unlock personalized practice recommendations based on your stats.</p>
+      </div>
+    </div>
+
+    <!-- STEP 3: ROUND HISTORY -->
+    <div id="history-view" class="history-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <h3 style="margin: 0;">Saved Rounds</h3>
+        <button id="btn-export" class="btn-main btn-secondary" style="margin: 0; padding: 6px 12px; width: auto; font-size: 13px;" onclick="exportToCSV()">Export CSV</button>
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('round-date').valueAsDate = new Date();
+
+    let currentRound = {
+      course: '',
+      date: '',
+      totalHoles: 18,
+      holes: []
+    };
+    let currentHoleIndex = 0;
+
+    function startRound() {
+      const course = document.getElementById('course-name').value.trim() || 'Local Course';
+      const date = document.getElementById('round-date').value;
+      const totalHoles = parseInt(document.getElementById('hole-count').value, 10);
+
+      currentRound = {
+        course: course,
+        date: date,
+        totalHoles: totalHoles,
+        holes: Array.from({ length: totalHoles }, () => ({
+          sz: false,
+          ud: false,
+          putt4: false,
+          putts: 2,
+          score: 4
+        }))
+      };
+
+      currentHoleIndex = 0;
+      document.getElementById('setup-view').classList.add('hidden');
+      document.getElementById('plan-view').classList.add('hidden');
+      document.getElementById('tracker-view').classList.remove('hidden');
+      document.getElementById('round-info-header').innerText = `${course} (${totalHoles}H)`;
+      
+      loadHoleData();
+    }
+
+    function loadHoleData() {
+      const data = currentRound.holes[currentHoleIndex];
+      document.getElementById('current-hole-title').innerText = `Hole ${currentHoleIndex + 1} of ${currentRound.totalHoles}`;
+      
+      setToggleState('sz', data.sz);
+      setToggleState('ud', data.ud);
+      setToggleState('putt4', data.putt4);
+      document.getElementById('num-putts').value = data.putts;
+      document.getElementById('num-score').value = data.score;
+
+      document.getElementById('btn-prev').style.display = currentHoleIndex === 0 ? 'none' : 'block';
+      
+      if (currentHoleIndex === currentRound.totalHoles - 1) {
+        document.getElementById('btn-next').classList.add('hidden');
+        document.getElementById('btn-finish').classList.remove('hidden');
+      } else {
+        document.getElementById('btn-next').classList.remove('hidden');
+        document.getElementById('btn-finish').classList.add('hidden');
+      }
+    }
+
+    function saveCurrentHoleData() {
+      currentRound.holes[currentHoleIndex] = {
+        sz: document.getElementById('btn-sz').classList.contains('active'),
+        ud: document.getElementById('btn-ud').classList.contains('active'),
+        putt4: document.getElementById('btn-putt4').classList.contains('active'),
+        putts: parseInt(document.getElementById('num-putts').value, 10) || 0,
+        score: parseInt(document.getElementById('num-score').value, 10) || 0
+      };
+    }
+
+    function toggleStat(id) {
+      const btn = document.getElementById(`btn-${id}`);
+      const isActive = btn.classList.contains('active');
+      setToggleState(id, !isActive);
+    }
+
+    function setToggleState(id, active) {
+      const btn = document.getElementById(`btn-${id}`);
+      if (active) {
+        btn.classList.add('active');
+        btn.innerText = '✓';
+      } else {
+        btn.classList.remove('active');
+        btn.innerText = '✕';
+      }
+    }
+
+    function changeHole(delta) {
+      saveCurrentHoleData();
+      currentHoleIndex += delta;
+      loadHoleData();
+    }
+
+    function saveRound() {
+      saveCurrentHoleData();
+
+      let totalScore = 0;
+      let totalPutts = 0;
+      let totalSZ = 0;
+      let totalUD = 0;
+      let totalPutt4 = 0;
+
+      currentRound.holes.forEach(h => {
+        totalScore += h.score;
+        totalPutts += h.putts;
+        if (h.sz) totalSZ++;
+        if (h.ud) totalUD++;
+        if (h.putt4) totalPutt4++;
+      });
+
+      const roundSummary = {
+        id: Date.now(),
+        course: currentRound.course,
+        date: currentRound.date,
+        totalHoles: currentRound.totalHoles,
+        totalScore: totalScore,
+        totalPutts: totalPutts,
+        szPct: Math.round((totalSZ / currentRound.totalHoles) * 100),
+        udPct: Math.round((totalUD / currentRound.totalHoles) * 100),
+        putt4Pct: Math.round((totalPutt4 / currentRound.totalHoles) * 100)
+      };
+
+      const savedRounds = JSON.parse(localStorage.getItem('pixel_golf_rounds') || '[]');
+      savedRounds.unshift(roundSummary);
+      localStorage.setItem('pixel_golf_rounds', JSON.stringify(savedRounds));
+
+      document.getElementById('tracker-view').classList.add('hidden');
+      document.getElementById('setup-view').classList.remove('hidden');
+      document.getElementById('plan-view').classList.remove('hidden');
+      renderHistory();
+      updatePracticePlan();
+    }
+
+    function deleteRound(roundId) {
+      if (confirm('Are you sure you want to delete this round?')) {
+        let savedRounds = JSON.parse(localStorage.getItem('pixel_golf_rounds') || '[]');
+        savedRounds = savedRounds.filter(r => r.id !== roundId);
+        localStorage.setItem('pixel_golf_rounds', JSON.stringify(savedRounds));
+        renderHistory();
+        updatePracticePlan();
+      }
+    }
+
+    function exportToCSV() {
+      const savedRounds = JSON.parse(localStorage.getItem('pixel_golf_rounds') || '[]');
+      if (savedRounds.length === 0) {
+        alert('No rounds available to export.');
+        return;
+      }
+
+      const headers = ['Date', 'Course', 'Holes', 'Total Score', 'Total Putts', 'Scoring Zone Reg %', 'Up and Down %', '1st Putt Under 4ft %'];
+      const rows = savedRounds.map(r => [
+        `"${r.date}"`,
+        `"${r.course.replace(/"/g, '""')}"`,
+        r.totalHoles,
+        r.totalScore,
+        r.totalPutts,
+        `"${r.szPct}%"`,
+        `"${r.udPct}%"`,
+        `"${r.putt4Pct}%"`
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `brilliantly_boring_golf_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function updatePracticePlan() {
+      const savedRounds = JSON.parse(localStorage.getItem('pixel_golf_rounds') || '[]');
+      const container = document.getElementById('plan-content');
+
+      if (savedRounds.length === 0) {
+        container.innerHTML = '<p style="color: var(--subtext); font-size: 14px; margin: 0;">Play a round to unlock personalized practice recommendations based on your stats.</p>';
+        return;
+      }
+
+      // Calculate overall averages across all stored rounds
+      const avgSZ = Math.round(savedRounds.reduce((acc, r) => acc + r.szPct, 0) / savedRounds.length);
+      const avgUD = Math.round(savedRounds.reduce((acc, r) => acc + r.udPct, 0) / savedRounds.length);
+      const avgPutt4 = Math.round(savedRounds.reduce((acc, r) => acc + r.putt4Pct, 0) / savedRounds.length);
+
+      // Identify lowest performing metric
+      const stats = [
+        { key: 'sz', name: 'Scoring Zone in Regulation', pct: avgSZ },
+        { key: 'ud', name: 'Up & Down in 3', pct: avgUD },
+        { key: 'putt4', name: '1st Putt Under 4ft', pct: avgPutt4 }
+      ];
+      stats.sort((a, b) => a.pct - b.pct);
+      const weakest = stats[0];
+
+      let planTitle = '';
+      let planDesc = '';
+
+      if (weakest.key === 'sz') {
+        planTitle = '🎯 Focus: Approach & Distance Control (SZ: ' + avgSZ + '%)';
+        planDesc = 'Your primary bottleneck is hitting the Scoring Zone in regulation. Spend 60% of range sessions hitting targets between 80–140 yards using half and 3/4 wedge swing feels.';
+      } else if (weakest.key === 'ud') {
+        planTitle = '⛳ Focus: Chipping & Short Game (Up & Down: ' + avgUD + '%)';
+        planDesc = 'You are missing opportunities to convert inside the scoring zone. Work on basic chip-and-run shots to a 6-foot circle from various rough and fairway lies surrounding the green.';
+      } else {
+        planTitle = '🏒 Focus: Lag Putting & Speed Control (1st Putt < 4ft: ' + avgPutt4 + '%)';
+        planDesc = 'Your first putts are ending up too far from the hole. Practice 30-foot and 45-foot speed control drills to ensure your second putts are consistently inside tap-in distance.';
+      }
+
+      container.innerHTML = `
+        <div class="plan-box">
+          <div class="plan-title">${planTitle}</div>
+          <p class="plan-desc">${planDesc}</p>
+        </div>
+      `;
+    }
+
+    function renderHistory() {
+      const savedRounds = JSON.parse(localStorage.getItem('pixel_golf_rounds') || '[]');
+      const container = document.getElementById('history-list');
+      
+      if (savedRounds.length === 0) {
+        container.innerHTML = '<p style="color: var(--subtext); font-size: 14px;">No saved rounds yet.</p>';
+        return;
+      }
+
+      container.innerHTML = savedRounds.map(r => `
+        <div class="history-item">
+          <div class="history-header">
+            <h4>${r.course} (${r.totalHoles}H)</h4>
+            <button class="btn-delete" onclick="deleteRound(${r.id})">Delete</button>
+          </div>
+          <div class="stat-grid">
+            <span><strong>Date:</strong> ${r.date}</span>
+            <span><strong>Score:</strong> ${r.totalScore}</span>
+            <span><strong>Putts:</strong> ${r.totalPutts}</span>
+            <span><strong>SZ in Reg:</strong> ${r.szPct}%</span>
+            <span><strong>Up & Down:</strong> ${r.udPct}%</span>
+            <span><strong>1st Putt < 4ft:</strong> ${r.putt4Pct}%</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    renderHistory();
+    updatePracticePlan();
+    
+    renderHistory();
+    updatePracticePlan();
+
+    // REGISTER SERVICE WORKER FOR HOME SCREEN INSTALLATION
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log('Service Worker Registered'))
+        .catch((err) => console.log('SW Registration Failed:', err));
+    }
+  </script>
+
+</body>
+</html>
