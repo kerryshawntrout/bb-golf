@@ -78,10 +78,16 @@
       align-items: center;
       padding: 10px 0;
       border-bottom: 1px solid var(--border);
+      gap: 8px;
     }
-    .toggle-row span { font-size: 15px; font-weight: 500; }
+    .toggle-row span { font-size: 14px; font-weight: 500; flex: 1; }
+    .action-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .toggle-btn {
-      padding: 8px 18px;
+      padding: 8px 16px;
       border-radius: 20px;
       border: none;
       font-weight: bold;
@@ -89,6 +95,7 @@
       background-color: var(--accent-red);
       color: #ffffff;
       transition: all 0.2s ease;
+      min-width: 44px;
     }
     .toggle-btn.active {
       background-color: var(--accent-green);
@@ -103,10 +110,10 @@
     }
     .number-row:last-child { border-bottom: none; }
     .number-input {
-      width: 75px;
-      padding: 8px;
+      width: 60px;
+      padding: 6px;
       text-align: center;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
       border-radius: 8px;
       border: 1px solid var(--border);
@@ -160,7 +167,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--subtext);
       background: rgba(0,0,0,0.2);
       padding: 8px;
@@ -232,18 +239,26 @@
 
       <div class="hole-card">
         <div class="toggle-row">
-          <span>1. Scoring Zone in Regulation</span>
-          <button id="btn-sz" class="toggle-btn" onclick="toggleStat('sz')">✕</button>
+          <span>1. Scoring Zone in Reg.</span>
+          <div class="action-controls">
+            <input type="number" id="num-sz-strokes" class="number-input" value="2" min="1" title="Strokes to SZ">
+            <button id="btn-sz" class="toggle-btn" onclick="toggleStat('sz')">✕</button>
+          </div>
         </div>
 
         <div class="toggle-row">
           <span>2. Up & Down in 3 (from SZ)</span>
-          <button id="btn-ud" class="toggle-btn" onclick="toggleStat('ud')">✕</button>
+          <div class="action-controls">
+            <input type="number" id="num-sz-green-strokes" class="number-input" value="1" min="1" title="Strokes SZ to Green">
+            <button id="btn-ud" class="toggle-btn" onclick="toggleStat('ud')">✕</button>
+          </div>
         </div>
 
         <div class="toggle-row">
           <span>3. 1st Putt Under 4ft</span>
-          <button id="btn-putt4" class="toggle-btn" onclick="toggleStat('putt4')">✕</button>
+          <div class="action-controls">
+            <button id="btn-putt4" class="toggle-btn" onclick="toggleStat('putt4')">✕</button>
+          </div>
         </div>
 
         <div class="number-row">
@@ -317,7 +332,9 @@
         totalHoles: totalHoles,
         holes: Array.from({ length: totalHoles }, () => ({
           sz: false,
+          szStrokes: 2,
           ud: false,
+          szGreenStrokes: 1,
           putt4: false,
           puttDist: 8,
           putts: 2,
@@ -339,7 +356,11 @@
       document.getElementById('current-hole-title').innerText = `Hole ${currentHoleIndex + 1} of ${currentRound.totalHoles}`;
       
       setToggleState('sz', data.sz);
+      document.getElementById('num-sz-strokes').value = data.szStrokes;
+      
       setToggleState('ud', data.ud);
+      document.getElementById('num-sz-green-strokes').value = data.szGreenStrokes;
+
       setToggleState('putt4', data.putt4);
       document.getElementById('num-putt-dist').value = data.puttDist;
       document.getElementById('num-putts').value = data.putts;
@@ -359,7 +380,9 @@
     function saveCurrentHoleData() {
       currentRound.holes[currentHoleIndex] = {
         sz: document.getElementById('btn-sz').classList.contains('active'),
+        szStrokes: parseInt(document.getElementById('num-sz-strokes').value, 10) || 0,
         ud: document.getElementById('btn-ud').classList.contains('active'),
+        szGreenStrokes: parseInt(document.getElementById('num-sz-green-strokes').value, 10) || 0,
         putt4: document.getElementById('btn-putt4').classList.contains('active'),
         puttDist: parseInt(document.getElementById('num-putt-dist').value, 10) || 0,
         putts: parseInt(document.getElementById('num-putts').value, 10) || 0,
@@ -399,11 +422,15 @@
       let totalUD = 0;
       let totalPutt4 = 0;
       let totalPuttDist = 0;
+      let totalSZStrokes = 0;
+      let totalSZGreenStrokes = 0;
 
       currentRound.holes.forEach(h => {
         totalScore += h.score;
         totalPutts += h.putts;
         totalPuttDist += h.puttDist;
+        totalSZStrokes += h.szStrokes;
+        totalSZGreenStrokes += h.szGreenStrokes;
         if (h.sz) totalSZ++;
         if (h.ud) totalUD++;
         if (h.putt4) totalPutt4++;
@@ -417,6 +444,8 @@
         totalScore: totalScore,
         totalPutts: totalPutts,
         avgPuttDist: Math.round((totalPuttDist / currentRound.totalHoles) * 10) / 10,
+        avgSZStrokes: Math.round((totalSZStrokes / currentRound.totalHoles) * 10) / 10,
+        avgSZGreenStrokes: Math.round((totalSZGreenStrokes / currentRound.totalHoles) * 10) / 10,
         szPct: Math.round((totalSZ / currentRound.totalHoles) * 100),
         udPct: Math.round((totalUD / currentRound.totalHoles) * 100),
         putt4Pct: Math.round((totalPutt4 / currentRound.totalHoles) * 100)
@@ -450,7 +479,7 @@
         return;
       }
 
-      const headers = ['Date', 'Course', 'Holes', 'Total Score', 'Total Putts', 'Avg 1st Putt Dist (Paces)', 'Scoring Zone Reg %', 'Up and Down %', '1st Putt Under 4ft %'];
+      const headers = ['Date', 'Course', 'Holes', 'Total Score', 'Total Putts', 'Avg 1st Putt Dist (Paces)', 'Avg Strokes to SZ', 'Avg Strokes SZ to Green', 'Scoring Zone Reg %', 'Up and Down %', '1st Putt Under 4ft %'];
       const rows = savedRounds.map(r => [
         `"${r.date}"`,
         `"${r.course.replace(/"/g, '""')}"`,
@@ -458,6 +487,8 @@
         r.totalScore,
         r.totalPutts,
         r.avgPuttDist || 'N/A',
+        r.avgSZStrokes || 'N/A',
+        r.avgSZGreenStrokes || 'N/A',
         `"${r.szPct}%"`,
         `"${r.udPct}%"`,
         `"${r.putt4Pct}%"`
@@ -552,6 +583,8 @@
             <span><strong>Score:</strong> ${r.totalScore}</span>
             <span><strong>Putts:</strong> ${r.totalPutts}</span>
             <span><strong>Avg 1st Putt:</strong> ${r.avgPuttDist || 'N/A'} paces</span>
+            <span><strong>Avg Strokes to SZ:</strong> ${r.avgSZStrokes || 'N/A'}</span>
+            <span><strong>Avg SZ to Green:</strong> ${r.avgSZGreenStrokes || 'N/A'}</span>
             <span><strong>SZ Reg:</strong> ${r.szPct}%</span>
             <span><strong>Up & Down:</strong> ${r.udPct}%</span>
             <span><strong>1st Putt < 4ft:</strong> ${r.putt4Pct}%</span>
