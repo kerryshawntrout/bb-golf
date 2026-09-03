@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bb-golf-v3';
+const CACHE_NAME = 'bb-golf-v4';
 const ASSETS = [
   './index.html',
   './manifest.json',
