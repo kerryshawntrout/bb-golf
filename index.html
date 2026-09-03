@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="manifest.json">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Brilliantly Boring Golf</title>
+  <link rel="manifest" href="manifest.json">
   <style>
     :root {
       --bg: #121a14;            /* Dark Pine / Deep Forest */
@@ -99,9 +99,11 @@
       justify-content: space-between;
       align-items: center;
       padding: 10px 0;
+      border-bottom: 1px solid var(--border);
     }
+    .number-row:last-child { border-bottom: none; }
     .number-input {
-      width: 70px;
+      width: 75px;
       padding: 8px;
       text-align: center;
       font-size: 18px;
@@ -183,6 +185,16 @@
       line-height: 1.4;
       margin: 0;
     }
+    .warning-box {
+      background: rgba(198, 40, 40, 0.15);
+      border-left: 4px solid var(--accent-red);
+      padding: 10px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 10px;
+      font-size: 13px;
+      color: #ffcdd2;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body>
@@ -235,12 +247,17 @@
         </div>
 
         <div class="number-row">
-          <span>4. Total Putts</span>
+          <span>4. 1st Putt Dist. (Paces)</span>
+          <input type="number" id="num-putt-dist" class="number-input" value="8" min="0">
+        </div>
+
+        <div class="number-row">
+          <span>5. Total Putts</span>
           <input type="number" id="num-putts" class="number-input" value="2" min="0">
         </div>
 
         <div class="number-row">
-          <span>5. Hole Score</span>
+          <span>6. Hole Score</span>
           <input type="number" id="num-score" class="number-input" value="4" min="1">
         </div>
       </div>
@@ -269,7 +286,7 @@
       </div>
       <div id="history-list"></div>
     </div>
-  </div>
+
     <!-- ATTRIBUTION FOOTER -->
     <div class="history-card" style="text-align: center; margin-top: 16px;">
       <p style="font-size: 12px; color: var(--subtext); margin: 0;">
@@ -302,6 +319,7 @@
           sz: false,
           ud: false,
           putt4: false,
+          puttDist: 8,
           putts: 2,
           score: 4
         }))
@@ -323,6 +341,7 @@
       setToggleState('sz', data.sz);
       setToggleState('ud', data.ud);
       setToggleState('putt4', data.putt4);
+      document.getElementById('num-putt-dist').value = data.puttDist;
       document.getElementById('num-putts').value = data.putts;
       document.getElementById('num-score').value = data.score;
 
@@ -342,6 +361,7 @@
         sz: document.getElementById('btn-sz').classList.contains('active'),
         ud: document.getElementById('btn-ud').classList.contains('active'),
         putt4: document.getElementById('btn-putt4').classList.contains('active'),
+        puttDist: parseInt(document.getElementById('num-putt-dist').value, 10) || 0,
         putts: parseInt(document.getElementById('num-putts').value, 10) || 0,
         score: parseInt(document.getElementById('num-score').value, 10) || 0
       };
@@ -378,10 +398,12 @@
       let totalSZ = 0;
       let totalUD = 0;
       let totalPutt4 = 0;
+      let totalPuttDist = 0;
 
       currentRound.holes.forEach(h => {
         totalScore += h.score;
         totalPutts += h.putts;
+        totalPuttDist += h.puttDist;
         if (h.sz) totalSZ++;
         if (h.ud) totalUD++;
         if (h.putt4) totalPutt4++;
@@ -394,6 +416,7 @@
         totalHoles: currentRound.totalHoles,
         totalScore: totalScore,
         totalPutts: totalPutts,
+        avgPuttDist: Math.round((totalPuttDist / currentRound.totalHoles) * 10) / 10,
         szPct: Math.round((totalSZ / currentRound.totalHoles) * 100),
         udPct: Math.round((totalUD / currentRound.totalHoles) * 100),
         putt4Pct: Math.round((totalPutt4 / currentRound.totalHoles) * 100)
@@ -427,13 +450,14 @@
         return;
       }
 
-      const headers = ['Date', 'Course', 'Holes', 'Total Score', 'Total Putts', 'Scoring Zone Reg %', 'Up and Down %', '1st Putt Under 4ft %'];
+      const headers = ['Date', 'Course', 'Holes', 'Total Score', 'Total Putts', 'Avg 1st Putt Dist (Paces)', 'Scoring Zone Reg %', 'Up and Down %', '1st Putt Under 4ft %'];
       const rows = savedRounds.map(r => [
         `"${r.date}"`,
         `"${r.course.replace(/"/g, '""')}"`,
         r.totalHoles,
         r.totalScore,
         r.totalPutts,
+        r.avgPuttDist || 'N/A',
         `"${r.szPct}%"`,
         `"${r.udPct}%"`,
         `"${r.putt4Pct}%"`
@@ -459,12 +483,15 @@
         return;
       }
 
-      // Calculate overall averages across all stored rounds
       const avgSZ = Math.round(savedRounds.reduce((acc, r) => acc + r.szPct, 0) / savedRounds.length);
       const avgUD = Math.round(savedRounds.reduce((acc, r) => acc + r.udPct, 0) / savedRounds.length);
       const avgPutt4 = Math.round(savedRounds.reduce((acc, r) => acc + r.putt4Pct, 0) / savedRounds.length);
+      
+      const validDistRounds = savedRounds.filter(r => r.avgPuttDist !== undefined);
+      const avgPuttDist = validDistRounds.length > 0 
+        ? Math.round((validDistRounds.reduce((acc, r) => acc + r.avgPuttDist, 0) / validDistRounds.length) * 10) / 10 
+        : 0;
 
-      // Identify lowest performing metric
       const stats = [
         { key: 'sz', name: 'Scoring Zone in Regulation', pct: avgSZ },
         { key: 'ud', name: 'Up & Down in 3', pct: avgUD },
@@ -487,11 +514,21 @@
         planDesc = 'Your first putts are ending up too far from the hole. Practice 30-foot and 45-foot speed control drills to ensure your second putts are consistently inside tap-in distance.';
       }
 
+      let warningHtml = '';
+      if (avgPuttDist > 10) {
+        warningHtml = `
+          <div class="warning-box">
+            <strong>⚠️ Proximity Warning:</strong> Your average first putt distance is <strong>${avgPuttDist} paces (~${Math.round(avgPuttDist * 3)} feet)</strong>. To improve your Up & Down conversion rate, focus on pitching and chipping closer to the hole on approach shots rather than relying solely on long putts.
+          </div>
+        `;
+      }
+
       container.innerHTML = `
         <div class="plan-box">
           <div class="plan-title">${planTitle}</div>
           <p class="plan-desc">${planDesc}</p>
         </div>
+        ${warningHtml}
       `;
     }
 
@@ -514,7 +551,8 @@
             <span><strong>Date:</strong> ${r.date}</span>
             <span><strong>Score:</strong> ${r.totalScore}</span>
             <span><strong>Putts:</strong> ${r.totalPutts}</span>
-            <span><strong>SZ in Reg:</strong> ${r.szPct}%</span>
+            <span><strong>Avg 1st Putt:</strong> ${r.avgPuttDist || 'N/A'} paces</span>
+            <span><strong>SZ Reg:</strong> ${r.szPct}%</span>
             <span><strong>Up & Down:</strong> ${r.udPct}%</span>
             <span><strong>1st Putt < 4ft:</strong> ${r.putt4Pct}%</span>
           </div>
@@ -524,19 +562,12 @@
 
     renderHistory();
     updatePracticePlan();
-    
-    renderHistory();
-    updatePracticePlan();
 
-    // REGISTER SERVICE WORKER FOR HOME SCREEN INSTALLATION
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(() => console.log('Service Worker Registered'))
         .catch((err) => console.log('SW Registration Failed:', err));
     }
   </script>
-
 </body>
 </html>
-
-  
