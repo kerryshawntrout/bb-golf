@@ -7,15 +7,15 @@
   <link rel="manifest" href="manifest.json">
   <style>
     :root {
-      --bg: #121a14;            /* Dark Pine / Deep Forest */
-      --card-bg: #1b261d;       /* Fairway Dark Green */
-      --accent-green: #2e7d32; /* Masters Green */
-      --accent-gold: #d4af37;  /* Trophy Gold */
-      --accent-light: #e8f5e9; /* Soft Fairway Cream */
-      --accent-red: #c62828;   /* Hazard Red */
-      --text: #f1f8f5;         /* Off-white */
-      --subtext: #a3c2ab;      /* Soft Sage */
-      --border: #2a3d2f;       /* Subtle Green Border */
+      --bg: #121a14;            
+      --card-bg: #1b261d;       
+      --accent-green: #2e7d32; 
+      --accent-gold: #d4af37;  
+      --accent-light: #e8f5e9; 
+      --accent-red: #c62828;   
+      --text: #f1f8f5;         
+      --subtext: #a3c2ab;      
+      --border: #2a3d2f;       
     }
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -61,7 +61,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
     label { display: block; margin-top: 12px; font-weight: bold; font-size: 14px; color: var(--subtext); }
-    input[type="text"], input[type="date"], select {
+    input[type="text"], input[type="date"], select, textarea {
       width: 100%;
       padding: 12px;
       margin-top: 4px;
@@ -228,6 +228,7 @@
       </select>
 
       <button class="btn-main" onclick="startRound()">Start Round</button>
+      <button id="btn-resume" class="btn-main btn-secondary hidden" onclick="resumeDraftRound()">Resume In-Progress Round</button>
     </div>
 
     <!-- STEP 2: TRACK HOLES -->
@@ -238,6 +239,15 @@
       </div>
 
       <div class="hole-card">
+        <div class="number-row">
+          <span>Hole Par</span>
+          <select id="num-par" class="number-input" style="width: 70px;" onchange="adjustSZDefault()">
+            <option value="3">Par 3</option>
+            <option value="4" selected>Par 4</option>
+            <option value="5">Par 5</option>
+          </select>
+        </div>
+
         <div class="toggle-row">
           <span>1. Scoring Zone in Reg.</span>
           <div class="action-controls">
@@ -272,7 +282,12 @@
         </div>
 
         <div class="number-row">
-          <span>6. Hole Score</span>
+          <span>6. Penalty Strokes</span>
+          <input type="number" id="num-penalties" class="number-input" value="0" min="0">
+        </div>
+
+        <div class="number-row">
+          <span>7. Hole Score</span>
           <input type="number" id="num-score" class="number-input" value="4" min="1">
         </div>
       </div>
@@ -287,7 +302,7 @@
 
     <!-- DYNAMIC PRACTICE PLAN -->
     <div id="plan-view" class="plan-card">
-      <h3 style="margin-top: 0;">Suggested Practice Plan</h3>
+      <h3 style="margin-top: 0;">Suggested Practice Plan (Last 5 Rounds)</h3>
       <div id="plan-content">
         <p style="color: var(--subtext); font-size: 14px; margin: 0;">Play a round to unlock personalized practice recommendations based on your stats.</p>
       </div>
@@ -321,6 +336,15 @@
     };
     let currentHoleIndex = 0;
 
+    function checkDraftRound() {
+      const draft = localStorage.getItem('pixel_golf_draft');
+      if (draft) {
+        document.getElementById('btn-resume').classList.remove('hidden');
+      } else {
+        document.getElementById('btn-resume').classList.add('hidden');
+      }
+    }
+
     function startRound() {
       const course = document.getElementById('course-name').value.trim() || 'Local Course';
       const date = document.getElementById('round-date').value;
@@ -331,6 +355,7 @@
         date: date,
         totalHoles: totalHoles,
         holes: Array.from({ length: totalHoles }, () => ({
+          par: 4,
           sz: false,
           szStrokes: 2,
           ud: false,
@@ -338,23 +363,46 @@
           putt4: false,
           puttDist: 8,
           putts: 2,
+          penalties: 0,
           score: 4
         }))
       };
 
       currentHoleIndex = 0;
+      initTrackerUI();
+    }
+
+    function resumeDraftRound() {
+      const draft = localStorage.getItem('pixel_golf_draft');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        currentRound = parsed.round;
+        currentHoleIndex = parsed.holeIndex || 0;
+        initTrackerUI();
+      }
+    }
+
+    function initTrackerUI() {
       document.getElementById('setup-view').classList.add('hidden');
       document.getElementById('plan-view').classList.add('hidden');
       document.getElementById('tracker-view').classList.remove('hidden');
-      document.getElementById('round-info-header').innerText = `${course} (${totalHoles}H)`;
-      
+      document.getElementById('round-info-header').innerText = `${currentRound.course} (${currentRound.totalHoles}H)`;
       loadHoleData();
+    }
+
+    function adjustSZDefault() {
+      const parVal = parseInt(document.getElementById('num-par').value, 10);
+      const szStrokesInput = document.getElementById('num-sz-strokes');
+      if (parVal === 3) szStrokesInput.value = 1;
+      else if (parVal === 4) szStrokesInput.value = 2;
+      else if (parVal === 5) szStrokesInput.value = 3;
     }
 
     function loadHoleData() {
       const data = currentRound.holes[currentHoleIndex];
       document.getElementById('current-hole-title').innerText = `Hole ${currentHoleIndex + 1} of ${currentRound.totalHoles}`;
       
+      document.getElementById('num-par').value = data.par || 4;
       setToggleState('sz', data.sz);
       document.getElementById('num-sz-strokes').value = data.szStrokes;
       
@@ -364,6 +412,7 @@
       setToggleState('putt4', data.putt4);
       document.getElementById('num-putt-dist').value = data.puttDist;
       document.getElementById('num-putts').value = data.putts;
+      document.getElementById('num-penalties').value = data.penalties || 0;
       document.getElementById('num-score').value = data.score;
 
       document.getElementById('btn-prev').style.display = currentHoleIndex === 0 ? 'none' : 'block';
@@ -379,6 +428,7 @@
 
     function saveCurrentHoleData() {
       currentRound.holes[currentHoleIndex] = {
+        par: parseInt(document.getElementById('num-par').value, 10) || 4,
         sz: document.getElementById('btn-sz').classList.contains('active'),
         szStrokes: parseInt(document.getElementById('num-sz-strokes').value, 10) || 0,
         ud: document.getElementById('btn-ud').classList.contains('active'),
@@ -386,8 +436,15 @@
         putt4: document.getElementById('btn-putt4').classList.contains('active'),
         puttDist: parseInt(document.getElementById('num-putt-dist').value, 10) || 0,
         putts: parseInt(document.getElementById('num-putts').value, 10) || 0,
+        penalties: parseInt(document.getElementById('num-penalties').value, 10) || 0,
         score: parseInt(document.getElementById('num-score').value, 10) || 0
       };
+
+      // Mid-round autosave
+      localStorage.setItem('pixel_golf_draft', JSON.stringify({
+        round: currentRound,
+        holeIndex: currentHoleIndex
+      }));
     }
 
     function toggleStat(id) {
@@ -417,7 +474,9 @@
       saveCurrentHoleData();
 
       let totalScore = 0;
+      let totalPar = 0;
       let totalPutts = 0;
+      let totalPenalties = 0;
       let totalSZ = 0;
       let totalUD = 0;
       let totalPutt4 = 0;
@@ -427,7 +486,9 @@
 
       currentRound.holes.forEach(h => {
         totalScore += h.score;
+        totalPar += h.par;
         totalPutts += h.putts;
+        totalPenalties += h.penalties;
         totalPuttDist += h.puttDist;
         totalSZStrokes += h.szStrokes;
         totalSZGreenStrokes += h.szGreenStrokes;
@@ -441,8 +502,10 @@
         course: currentRound.course,
         date: currentRound.date,
         totalHoles: currentRound.totalHoles,
+        totalPar: totalPar,
         totalScore: totalScore,
         totalPutts: totalPutts,
+        totalPenalties: totalPenalties,
         avgPuttDist: Math.round((totalPuttDist / currentRound.totalHoles) * 10) / 10,
         avgSZStrokes: Math.round((totalSZStrokes / currentRound.totalHoles) * 10) / 10,
         avgSZGreenStrokes: Math.round((totalSZGreenStrokes / currentRound.totalHoles) * 10) / 10,
@@ -455,9 +518,13 @@
       savedRounds.unshift(roundSummary);
       localStorage.setItem('pixel_golf_rounds', JSON.stringify(savedRounds));
 
+      // Clear draft on completed round
+      localStorage.removeItem('pixel_golf_draft');
+
       document.getElementById('tracker-view').classList.add('hidden');
       document.getElementById('setup-view').classList.remove('hidden');
       document.getElementById('plan-view').classList.remove('hidden');
+      checkDraftRound();
       renderHistory();
       updatePracticePlan();
     }
@@ -479,12 +546,14 @@
         return;
       }
 
-      const headers = ['Date', 'Course', 'Holes', 'Total Score', 'Total Putts', 'Avg 1st Putt Dist (Paces)', 'Avg Strokes to SZ', 'Avg Strokes SZ to Green', 'Scoring Zone Reg %', 'Up and Down %', '1st Putt Under 4ft %'];
+      const headers = ['Date', 'Course', 'Holes', 'Total Par', 'Total Score', 'Penalties', 'Total Putts', 'Avg 1st Putt Dist (Paces)', 'Avg Strokes to SZ', 'Avg Strokes SZ to Green', 'Scoring Zone Reg %', 'Up and Down %', '1st Putt Under 4ft %'];
       const rows = savedRounds.map(r => [
         `"${r.date}"`,
         `"${r.course.replace(/"/g, '""')}"`,
         r.totalHoles,
+        r.totalPar || 'N/A',
         r.totalScore,
+        r.totalPenalties || 0,
         r.totalPutts,
         r.avgPuttDist || 'N/A',
         r.avgSZStrokes || 'N/A',
@@ -514,11 +583,15 @@
         return;
       }
 
-      const avgSZ = Math.round(savedRounds.reduce((acc, r) => acc + r.szPct, 0) / savedRounds.length);
-      const avgUD = Math.round(savedRounds.reduce((acc, r) => acc + r.udPct, 0) / savedRounds.length);
-      const avgPutt4 = Math.round(savedRounds.reduce((acc, r) => acc + r.putt4Pct, 0) / savedRounds.length);
+      // Filter last 5 rounds for recent form analysis
+      const recentRounds = savedRounds.slice(0, 5);
+
+      const avgSZ = Math.round(recentRounds.reduce((acc, r) => acc + r.szPct, 0) / recentRounds.length);
+      const avgUD = Math.round(recentRounds.reduce((acc, r) => acc + r.udPct, 0) / recentRounds.length);
+      const avgPutt4 = Math.round(recentRounds.reduce((acc, r) => acc + r.putt4Pct, 0) / recentRounds.length);
+      const totalPenaltiesAvg = Math.round((recentRounds.reduce((acc, r) => acc + (r.totalPenalties || 0), 0) / recentRounds.length) * 10) / 10;
       
-      const validDistRounds = savedRounds.filter(r => r.avgPuttDist !== undefined);
+      const validDistRounds = recentRounds.filter(r => r.avgPuttDist !== undefined);
       const avgPuttDist = validDistRounds.length > 0 
         ? Math.round((validDistRounds.reduce((acc, r) => acc + r.avgPuttDist, 0) / validDistRounds.length) * 10) / 10 
         : 0;
@@ -546,10 +619,17 @@
       }
 
       let warningHtml = '';
-      if (avgPuttDist > 10) {
-        warningHtml = `
+      if (totalPenaltiesAvg >= 2) {
+        warningHtml += `
           <div class="warning-box">
-            <strong>⚠️ Proximity Warning:</strong> Your average first putt distance is <strong>${avgPuttDist} paces (~${Math.round(avgPuttDist * 3)} feet)</strong>. To improve your Up & Down conversion rate, focus on pitching and chipping closer to the hole on approach shots rather than relying solely on long putts.
+            <strong>⚠️ Penalty Alert:</strong> You are averaging <strong>${totalPenaltiesAvg} penalty strokes per round</strong> over your last 5 games. Prioritize course management and conservative target selection off the tee.
+          </div>
+        `;
+      }
+      if (avgPuttDist > 10) {
+        warningHtml += `
+          <div class="warning-box">
+            <strong>⚠️ Proximity Warning:</strong> Your average first putt distance is <strong>${avgPuttDist} paces (~${Math.round(avgPuttDist * 3)} feet)</strong>. To improve your Up & Down conversion rate, focus on pitching and chipping closer to the hole on approach shots.
           </div>
         `;
       }
@@ -572,27 +652,34 @@
         return;
       }
 
-      container.innerHTML = savedRounds.map(r => `
-        <div class="history-item">
-          <div class="history-header">
-            <h4>${r.course} (${r.totalHoles}H)</h4>
-            <button class="btn-delete" onclick="deleteRound(${r.id})">Delete</button>
+      container.innerHTML = savedRounds.map(r => {
+        const parDiff = r.totalPar ? (r.totalScore - r.totalPar) : null;
+        const parDisplay = parDiff !== null ? (parDiff > 0 ? `(+${parDiff})` : parDiff === 0 ? '(E)' : `(${parDiff})`) : '';
+        
+        return `
+          <div class="history-item">
+            <div class="history-header">
+              <h4>${r.course} (${r.totalHoles}H)</h4>
+              <button class="btn-delete" onclick="deleteRound(${r.id})">Delete</button>
+            </div>
+            <div class="stat-grid">
+              <span><strong>Date:</strong> ${r.date}</span>
+              <span><strong>Score:</strong> ${r.totalScore} ${parDisplay}</span>
+              <span><strong>Putts:</strong> ${r.totalPutts}</span>
+              <span><strong>Penalties:</strong> ${r.totalPenalties || 0}</span>
+              <span><strong>Avg 1st Putt:</strong> ${r.avgPuttDist || 'N/A'} paces</span>
+              <span><strong>Avg Strokes to SZ:</strong> ${r.avgSZStrokes || 'N/A'}</span>
+              <span><strong>Avg SZ to Green:</strong> ${r.avgSZGreenStrokes || 'N/A'}</span>
+              <span><strong>SZ Reg:</strong> ${r.szPct}%</span>
+              <span><strong>Up & Down:</strong> ${r.udPct}%</span>
+              <span><strong>1st Putt < 4ft:</strong> ${r.putt4Pct}%</span>
+            </div>
           </div>
-          <div class="stat-grid">
-            <span><strong>Date:</strong> ${r.date}</span>
-            <span><strong>Score:</strong> ${r.totalScore}</span>
-            <span><strong>Putts:</strong> ${r.totalPutts}</span>
-            <span><strong>Avg 1st Putt:</strong> ${r.avgPuttDist || 'N/A'} paces</span>
-            <span><strong>Avg Strokes to SZ:</strong> ${r.avgSZStrokes || 'N/A'}</span>
-            <span><strong>Avg SZ to Green:</strong> ${r.avgSZGreenStrokes || 'N/A'}</span>
-            <span><strong>SZ Reg:</strong> ${r.szPct}%</span>
-            <span><strong>Up & Down:</strong> ${r.udPct}%</span>
-            <span><strong>1st Putt < 4ft:</strong> ${r.putt4Pct}%</span>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
+    checkDraftRound();
     renderHistory();
     updatePracticePlan();
 
