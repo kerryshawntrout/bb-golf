@@ -3,7 +3,7 @@
   "name": "Brilliantly Boring Golf",
   "icons": [
     {
-      "src": "https://kerryshawntrout.github.io/bb-golf/golfer.png",
+      "src": "./golfer.png",
       "type": "image/png",
       "sizes": "512x512"
     }
